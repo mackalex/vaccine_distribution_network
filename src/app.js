@@ -4,7 +4,8 @@ App = {
     load: async () => {
         await App.loadBlockchain();
         await App.loadAccount();
-        await App.loadContract();
+        await App.loadVaccineDistribution();
+        await App.loadLocations();
         await App.render();
     },
 
@@ -45,14 +46,24 @@ App = {
         console.log(App.account);
     },
 
-    loadContract: async() => {
+    loadVaccineDistribution: async() => {
         // Create a JavaScript version of the smart contract
-        const todoList = await $.getJSON('TodoList.json');
-        App.contracts.TodoList = TruffleContract(todoList);
-        App.contracts.TodoList.setProvider(App.web3Provider);
+        const vaccineDistr = await $.getJSON('VaccineDistribution.json');
+        App.contracts.VaccineDistribution = TruffleContract(vaccineDistr);
+        App.contracts.VaccineDistribution.setProvider(App.web3Provider);
         
         // Hydrate the smart contract with values from the blockchain
-        App.todoList = await App.contracts.TodoList.deployed();
+        App.vaccineDistr = await App.contracts.VaccineDistribution.deployed();
+    },
+
+    loadLocations: async() => {
+        // Create a JavaScript version of the smart contract
+        const locations = await $.getJSON('Locations.json');
+        App.contracts.Locations = TruffleContract(locations);
+        App.contracts.Locations.setProvider(App.web3Provider);
+        
+        // Hydrate the smart contract with values from the blockchain
+        App.locations = await App.contracts.Locations.deployed();
     },
 
     render: async() => {
@@ -68,44 +79,114 @@ App = {
         $("#account").html(App.account);
 
         // Render Tasks
-        await App.renderTasks();
+        await App.renderForm();
+        await App.renderVaccineGrid();
+        await App.renderVaccineList();
+        await App.renderLocationList();
 
         // Update loading state
         App.setLoading(false);
     },
 
-    renderTasks: async () => {
-        // Load the total task count from the blockchain
-        const taskCount = await App.todoList.taskCount();
-        const $taskTemplate = $('.taskTemplate');
+    renderForm: async () => {
+      const $form = $('form');
+      $form.show();
+    },
 
-        // Render out each task with a new task template
-        for(var i = 1; i <= taskCount; i++) {
+    renderVaccineGrid: async () => {
+        // Load the total vaccine count from the blockchain
+        const vaccineCount = await App.vaccineDistr.vaccineCount();
+        const $vaccineTemplate = $('.vaccineTemplate');
+
+        // Render out each vaccine with a new vaccine template
+        for(var i = 1; i <= vaccineCount; i++) {
             // Fetch the task data from the blockchain
-            const task = await App.todoList.tasks(i);
-            const taskId = task[0].toNumber();
-            const taskContent = task[1];
-            const taskCompleted = task[2];
+            const vaccine = await App.vaccineDistr.vaccines(i);
+            const vaccineBarcode = vaccine[0];
+            const vaccineName = vaccine[1];
+            const vaccineManufacturer = vaccine[2];
+            const vaccineLocation = vaccine[3];
+            const vaccineTemp = vaccine[4].toString();
 
-            // Create the html for the task
-            const $newTaskTemplate = $taskTemplate.clone();
-            $newTaskTemplate.find('.content').html(taskContent);
-            $newTaskTemplate.find('input')
+            // Create the html for the vaccine
+            const $newVaccineTemplate = $vaccineTemplate.clone();
+            $newVaccineTemplate.find('.name').html(vaccineName);
+            $newVaccineTemplate.find('.barcode').html(vaccineBarcode);
+            $newVaccineTemplate.find('.manufacturer').html(vaccineManufacturer);
+            $newVaccineTemplate.find('.location').html(vaccineLocation);
+            $newVaccineTemplate.find('.temp').html(vaccineTemp + "°C");
+
+            if(vaccineTemp < 2 || vaccineTemp > 8) {
+              $newVaccineTemplate.find('.temp').addClass("badge-danger");
+            } else {
+              $newVaccineTemplate.find('.temp').addClass("badge-success");
+            }
+
+            /*$newVaccineTemplate.find('input')
                             .prop('name', taskId)
                             .prop('checked', taskCompleted)
-                            .on('click', App.toggleCompleted);
+                            .on('click', App.toggleCompleted);*/
 
             // Put the task in the correct list
-            if(taskCompleted) {
+            /*if(taskCompleted) {
                 $('#completedTaskList').append($newTaskTemplate);
             } else {
                 $('#taskList').append($newTaskTemplate);
-            }
+            }*/
 
-            // Show the task
-            $newTaskTemplate.show();
+            $('#vaccineList').append($newVaccineTemplate);
+
+            // Show the vaccine
+            $newVaccineTemplate.show();
         }
     },
+
+    renderVaccineList: async () => {
+        // Load the total vaccine count from the blockchain
+        const vaccineCount = await App.vaccineDistr.vaccineCount();
+        const $vaccineTemplate = $('.selectVaccineTemplate');
+
+        // Render out each vaccine with a new select vaccine template
+        for(var i = 1; i <= vaccineCount; i++) {
+          // Fetch the task data from the blockchain
+          const vaccine = await App.vaccineDistr.vaccines(i);
+          const vaccineBarcode = vaccine[0];
+          const vaccineName = vaccine[1];
+
+          // Create the html for the vaccine
+          const $newVaccineTemplate = $vaccineTemplate.clone();
+          $newVaccineTemplate.prop('value', i);
+          $newVaccineTemplate.html(vaccineName + ": " + vaccineBarcode);
+
+          $('#vaccineDropdownList').append($newVaccineTemplate);
+
+          // Show the vaccine
+          $newVaccineTemplate.prop('disabled', false);
+        }
+    },
+
+    renderLocationList: async () => {
+      // Load the total location count from the blockchain
+      const locationCount = await App.locations.locationCount();
+      const $selectLocationTemplate = $('.selectLocationTemplate');
+
+      // Render out each vaccine with a new select vaccine template
+      for(var i = 1; i <= locationCount; i++) {
+        // Fetch the task data from the blockchain
+        const location = await App.locations.locations(i);
+        const locationName = location;
+
+        // Create the html for the vaccine
+        const $newSelectLocationTemplate = $selectLocationTemplate.clone();
+        $newSelectLocationTemplate.prop('value', i);
+        $newSelectLocationTemplate.html(locationName);
+
+        $('#locationDropdownList').append($newSelectLocationTemplate);
+
+        // Show the vaccine
+        $newSelectLocationTemplate.prop('disabled', false);
+      }
+  },
 
     createTask: async () => {
         App.setLoading(true);
@@ -114,10 +195,12 @@ App = {
         window.location.reload();
     },
 
-    toggleCompleted: async (e) => {
+    receiveVaccine: async () => {
       App.setLoading(true);
-      const taskId = e.target.name;
-      await App.todoList.toggleCompleted(taskId);
+      const vaccineId = $('#vaccineDropdownList').val();
+      const vaccineLocation = $('#locationDropdownList').children("option:selected").text();
+      const vaccineTemp = $('#temp').val();
+      await App.vaccineDistr.receiveVaccine(vaccineId, vaccineLocation, vaccineTemp);
       window.location.reload();
     },
 

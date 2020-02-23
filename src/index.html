@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Dapp University | Todo List</title>
+    <title>OpenVax</title>
 
     <!-- Bootstrap -->
     <link href="vendor/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -20,6 +20,7 @@
     <style>
       main {
         margin-top: 60px;
+        margin-left: 60px;
       }
 
       #content {
@@ -39,11 +40,18 @@
         color: grey;
         text-decoration: line-through;
       }
+
+      .card-columns {
+        -webkit-column-count:6;
+        -moz-column-count:6;
+        column-count:6;
+      }
+
     </style>
   </head>
   <body>
     <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-      <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="http://www.dappuniversity.com/free-download" target="_blank">Dapp University | Todo List</a>
+      <a class="navbar-brand col-sm-3 col-md-2 mr-0">OpenVax</a>
       <ul class="navbar-nav px-3">
         <li class="nav-item text-nowrap d-none d-sm-none d-sm-block">
           <small><a class="nav-link" href="#"><span id="account"></span></a></small>
@@ -52,12 +60,49 @@
     </nav>
     <div class="container-fluid">
       <div class="row">
-        <main role="main" class="col-lg-12 d-flex justify-content-center">
+        <main role="main" class="d-flex justify-content-center">
           <div id="loader" class="text-center">
             <p class="text-center">Loading...</p>
           </div>
           <div id="content">
-            <form onSubmit="App.createTask(); return false;">
+            <form style="display: none;">
+              <div class="form-group">
+                <label for="locationTemplate">Select location</label>
+                <select class="form-control" id="locationDropdownList" required>
+                  <option class="selectLocationTemplate" disabled>Location goes here...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="vaccineTemplate">Select vaccine</label>
+                <select id="vaccineDropdownList" class="form-control" id="sel1" required>
+                  <option class="selectVaccineTemplate" disabled>Vaccine goes here...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="temperature">Temperature</label>
+                <input class="form-control" id="temp" placeholder="e.g. 2°C" required>
+              </div>
+              <button type="submit" class="btn btn-primary" onclick="App.receiveVaccine()">Receive</button>  
+            </form>
+          </div>
+        </main>
+      </div>
+      <div class="row">
+        <main role="main" class="d-flex justify-content-center">
+            <div id="vaccineList" class="card-columns">
+              <div class="vaccineTemplate card" style="width: 22rem; display: none;">
+                <div class="card-body">
+                  <h3 class="name card-title">Vaccine name goes here...</h3>
+                </div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex justify-content-between align-items-center">Barcode<span class="barcode badge badge-primary badge-pill">Barcode goes here...</span></li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">Manufacturer<span class="manufacturer badge badge-primary badge-pill">Manufacturer goes here...</span></li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">Location<span class="location badge badge-primary badge-pill">Location goes here...</span></li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">Temperature<span class="temp badge badge-primary badge-pill">Temperature goes here...</span></li>
+                </ul>
+              </div>
+            </div>
+            <!--<form onSubmit="App.createTask(); return false;">
               <input id="newTask" type="text" class="form-control" placeholder="Add task..." required>
               <input type="submit" hidden="">
             </form>
@@ -70,7 +115,7 @@
               </div>
             </ul>
             <ul id="completedTaskList" class="list-unstyled">
-            </ul>
+            </ul>-->
           </div>
         </main>
       </div>
